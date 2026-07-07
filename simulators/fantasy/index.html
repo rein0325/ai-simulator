@@ -8,7 +8,6 @@
 </head>
 <body>
 
-  <!-- 密碼遮罩 -->
   <div id="gate">
     <div class="gate-box">
       <div class="gate-icon">⚔️</div>
@@ -16,19 +15,16 @@
       <p>輸入密碼以進入</p>
       <input type="password" id="gate-input" placeholder="密碼" autofocus>
       <button id="gate-btn">進入</button>
-
       <div id="gate-step2" style="display:none; flex-direction:column; gap:14px; width:100%;">
         <hr style="border-color: var(--border); width:100%;">
         <p>首次使用，請輸入 Gemini API Key</p>
         <input type="password" id="key-input" placeholder="AIza...">
         <button onclick="confirmKey()">確認並開始</button>
       </div>
-
       <span id="gate-error"></span>
     </div>
   </div>
 
-  <!-- 主畫面 -->
   <header>
     <a href="../../index.html" class="back-btn">← 選單</a>
     <h1>奇幻冒險</h1>
@@ -38,7 +34,7 @@
     <section class="story-panel">
       <div id="story-log">
         <div class="story-entry system">
-          密碼驗證後，在下方輸入框描述你的行動，開始冒險。
+          輸入密碼後開始冒險。
         </div>
       </div>
       <div class="input-area">
@@ -77,64 +73,58 @@
   <script src="config.js"></script>
 
   <script>
-    const GATE_PASSWORD = '1235640325';  // ← 密碼改這裡
+    const GATE_PASSWORD = '1235640325';  // ← 改這裡
 
-    // ===== 密碼驗證 =====
     function unlock() {
-        const pwInput = document.getElementById('gate-input').value;
-        if (pwInput !== GATE_PASSWORD) {
+      const pwInput = document.getElementById('gate-input').value;
+      if (pwInput !== GATE_PASSWORD) {
         document.getElementById('gate-error').textContent = '密碼錯誤';
         document.getElementById('gate-input').value = '';
         document.getElementById('gate-input').focus();
         return;
-        }
-
-        // 密碼正確，檢查 localStorage 有沒有存過 Key
-        const savedKey = localStorage.getItem('gemini_api_key');
-        if (savedKey) {
-        // 有的話直接進遊戲
+      }
+      const savedKey = localStorage.getItem('gemini_api_key');
+      if (savedKey) {
         startApp(savedKey);
-        } else {
-        // 沒有的話顯示 Key 輸入框
+      } else {
         document.getElementById('gate-step2').style.display = 'flex';
-        }
+      }
     }
 
     function confirmKey() {
-        const key = document.getElementById('key-input').value.trim();
-        if (!key) {
+      const key = document.getElementById('key-input').value.trim();
+      if (!key) {
         document.getElementById('gate-error').textContent = '請輸入 API Key';
         return;
-        }
-        localStorage.setItem('gemini_api_key', key);
-        startApp(key);
+      }
+      localStorage.setItem('gemini_api_key', key);
+      startApp(key);
     }
 
     function startApp(apiKey) {
-        window._apiKey = apiKey;
-        document.getElementById('gate').style.display = 'none';
-        StateManager.init(SimulatorConfig.initialState);
-        MemoryManager.init(SimulatorConfig.systemPrompt);
-        startGame();
+      window._apiKey = apiKey;
+      document.getElementById('gate').style.display = 'none';
+      StateManager.init(SimulatorConfig.initialState);
+      MemoryManager.init(SimulatorConfig.systemPrompt);
+      startGame();
     }
 
     document.getElementById('gate-btn').addEventListener('click', unlock);
     document.getElementById('gate-input').addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') unlock();
+      if (e.key === 'Enter') unlock();
     });
 
-    // ===== 遊戲邏輯 =====
     document.getElementById('player-input').addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
+      if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         sendMessage();
-        }
+      }
     });
     document.getElementById('send-btn').addEventListener('click', sendMessage);
 
     async function startGame() {
-        appendStory('loading', '世界正在生成中...');
-        try {
+      appendStory('loading', '世界正在生成中...');
+      try {
         MemoryManager.add('user', '請描述我的起始場景，讓我感受到這個世界的氛圍。');
         const raw = await AIApi.call(MemoryManager.getMessages(), window._apiKey);
         const { story, delta } = AIApi.parseResponse(raw);
@@ -142,23 +132,23 @@
         StateManager.applyDelta(delta);
         removeLoading();
         appendStory('ai', story);
-        } catch (err) {
+      } catch (err) {
         removeLoading();
         appendStory('error', '錯誤：' + err.message);
-        }
+      }
     }
 
     async function sendMessage() {
-        const input = document.getElementById('player-input');
-        const text = input.value.trim();
-        if (!text) return;
+      const input = document.getElementById('player-input');
+      const text = input.value.trim();
+      if (!text) return;
 
-        input.value = '';
-        appendStory('player', text);
-        appendStory('loading', 'AI 思考中...');
-        document.getElementById('send-btn').disabled = true;
+      input.value = '';
+      appendStory('player', text);
+      appendStory('loading', 'AI 思考中...');
+      document.getElementById('send-btn').disabled = true;
 
-        try {
+      try {
         MemoryManager.add('user', text);
         const raw = await AIApi.call(MemoryManager.getMessages(), window._apiKey);
         const { story, delta } = AIApi.parseResponse(raw);
@@ -166,29 +156,29 @@
         StateManager.applyDelta(delta);
         removeLoading();
         appendStory('ai', story);
-        } catch (err) {
+      } catch (err) {
         removeLoading();
         appendStory('error', '錯誤：' + err.message);
-        }
+      }
 
-        document.getElementById('send-btn').disabled = false;
+      document.getElementById('send-btn').disabled = false;
     }
 
     function appendStory(type, text) {
-        const log = document.getElementById('story-log');
-        const div = document.createElement('div');
-        div.className = `story-entry ${type}`;
-        if (type === 'loading') div.dataset.loading = 'true';
-        div.textContent = text;
-        log.appendChild(div);
-        log.scrollTop = log.scrollHeight;
+      const log = document.getElementById('story-log');
+      const div = document.createElement('div');
+      div.className = `story-entry ${type}`;
+      if (type === 'loading') div.dataset.loading = 'true';
+      div.textContent = text;
+      log.appendChild(div);
+      log.scrollTop = log.scrollHeight;
     }
 
     function removeLoading() {
-        const el = document.querySelector('[data-loading="true"]');
-        if (el) el.remove();
+      const el = document.querySelector('[data-loading="true"]');
+      if (el) el.remove();
     }
-    </script>
+  </script>
 
 </body>
 </html>
