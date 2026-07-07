@@ -8,7 +8,7 @@
 </head>
 <body>
 
-  <!-- 密碼遮罩：驗證前蓋住整個頁面 -->
+  <!-- 密碼遮罩 -->
   <div id="gate">
     <div class="gate-box">
       <div class="gate-icon">⚔️</div>
@@ -16,11 +16,19 @@
       <p>輸入密碼以進入</p>
       <input type="password" id="gate-input" placeholder="密碼" autofocus>
       <button id="gate-btn">進入</button>
+
+      <div id="gate-step2" style="display:none; flex-direction:column; gap:14px; width:100%;">
+        <hr style="border-color: var(--border); width:100%;">
+        <p>首次使用，請輸入 Gemini API Key</p>
+        <input type="password" id="key-input" placeholder="AIza...">
+        <button onclick="confirmKey()">確認並開始</button>
+      </div>
+
       <span id="gate-error"></span>
     </div>
   </div>
 
-  <!-- 以下原本的內容完全不動 -->
+  <!-- 主畫面 -->
   <header>
     <a href="../../index.html" class="back-btn">← 選單</a>
     <h1>奇幻冒險</h1>
@@ -30,7 +38,7 @@
     <section class="story-panel">
       <div id="story-log">
         <div class="story-entry system">
-          在下方輸入框描述你的行動，開始冒險。
+          密碼驗證後，在下方輸入框描述你的行動，開始冒險。
         </div>
       </div>
       <div class="input-area">
@@ -69,7 +77,7 @@
   <script src="config.js"></script>
 
   <script>
-    const GATE_PASSWORD = '1235640325';  // ← 改這裡
+    const GATE_PASSWORD = '1235640325';  // ← 密碼改這裡
 
     // ===== 密碼驗證 =====
     function unlock() {
