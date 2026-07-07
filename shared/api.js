@@ -1,19 +1,32 @@
 // shared/api.js
 const AIApi = {
-  // 呼叫 OpenAI，傳入訊息陣列，回傳 AI 的回應文字
   async call(messages, apiKey) {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        max_tokens: 1000,
-        messages: messages
-      })
-    });
+    // Gemini 的格式跟 OpenAI 不同，需要轉換
+    const systemMsg = messages.find(m => m.role === 'system');
+    const chatMessages = messages.filter(m => m.role !== 'system');
+
+    const geminiMessages = chatMessages.map(m => ({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: m.content }]
+    }));
+
+    const body = {
+      systemInstruction: systemMsg ? { parts: [{ text: systemMsg.content }] } : undefined,
+      contents: geminiMessages,
+      generationConfig: {
+        maxOutputTokens: 1000,
+        temperature: 0.9
+      }
+    };
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      }
+    );
 
     if (!response.ok) {
       const err = await response.json();
@@ -21,10 +34,10 @@ const AIApi = {
     }
 
     const data = await response.json();
-    return data.choices[0].message.content;
+    return data.candidates[0].content.parts[0].text;
   },
 
-  // 從 AI 回應中解析出 <story> 和 <state_delta> 兩個區塊
+  // 這個函式不變，直接沿用
   parseResponse(raw) {
     const storyMatch = raw.match(/<story>([\s\S]*?)<\/story>/);
     const deltaMatch = raw.match(/<state_delta>([\s\S]*?)<\/state_delta>/);
