@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI 模擬器</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #1a1510;
+      color: #e8dcc8;
+      font-family: 'Georgia', serif;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 40px;
+      padding: 40px 20px;
+    }
+    h1 { font-size: 28px; color: #c8943a; letter-spacing: 4px; }
+    p  { color: #9a8870; font-size: 14px; font-family: sans-serif; }
+    .grid {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .card {
+      background: #24201a;
+      border: 1px solid #4a4030;
+      border-radius: 12px;
+      padding: 30px 36px;
+      text-align: center;
+      text-decoration: none;
+      color: inherit;
+      width: 200px;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .card:hover { border-color: #c8943a; background: #2e2820; }
+    .card .icon { font-size: 36px; margin-bottom: 14px; }
+    .card .name { font-size: 16px; color: #c8943a; }
+    .card .desc { font-size: 12px; color: #9a8870; margin-top: 6px; font-family: sans-serif; }
+    .card.soon { opacity: 0.4; pointer-events: none; }
+  </style>
+</head>
+<body>
+  <h1>AI 模擬器</h1>
+  <p>選擇一個世界，開始你的冒險</p>
+  <div class="grid">
+    <a class="card" href="simulators/fantasy/index.html">
+      <div class="icon">⚔️</div>
+      <div class="name">奇幻冒險</div>
+      <div class="desc">魔法、怪物與未知的旅途</div>
+    </a>
+    <div class="card soon">
+      <div class="icon">🚀</div>
+      <div class="name">科幻探索</div>
+      <div class="desc">即將推出</div>
+    </div>
+  </div>
+</body>
+</html>
