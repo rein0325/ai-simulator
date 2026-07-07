@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>奇幻冒險</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- 頂部標題列 -->
+  <header>
+    <a href="../../index.html" class="back-btn">← 選單</a>
+    <h1>奇幻冒險</h1>
+    <div id="api-key-area">
+      <input type="password" id="api-key-input" placeholder="貼上你的 OpenAI API Key">
+      <button id="api-key-btn">確認</button>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- 左：劇情區 -->
+    <section class="story-panel">
+      <div id="story-log">
+        <div class="story-entry system">
+          輸入 API Key 後，在下方輸入框描述你的行動，開始冒險。
+        </div>
+      </div>
+      <div class="input-area">
+        <textarea id="player-input" placeholder="你想做什麼？（例：向北走、攻擊哥布林、查看背包）" rows="2"></textarea>
+        <button id="send-btn" disabled>送出</button>
+      </div>
+    </section>
+
+    <!-- 右：狀態欄 -->
+    <aside class="status-panel">
+      <h2>角色狀態</h2>
+
+      <div class="stat-block">
+        <label>生命值</label>
+        <div class="hp-bar-track">
+          <div id="stat-hp-bar" class="hp-bar-fill"></div>
+        </div>
+        <span id="stat-hp">100 / 100</span>
+      </div>
+
+      <div class="stat-block">
+        <label>金幣</label>
+        <span id="stat-gold">30</span>
+      </div>
+
+      <div class="stat-block">
+        <label>位置</label>
+        <span id="stat-location">迷霧村莊</span>
+      </div>
+
+      <div class="stat-block">
+        <label>背包</label>
+        <span id="stat-inventory">生鏽短劍、麵包 x2</span>
+      </div>
+    </aside>
+
+  </main>
+
+  <!-- 載入三個共用模組 + 這個模擬器的 config -->
+  <script src="../../shared/api.js"></script>
+  <script src="../../shared/state.js"></script>
+  <script src="../../shared/memory.js"></script>
+  <script src="config.js"></script>
+
+  <!-- 遊戲主邏輯 -->
+  <script>
+    let apiKey = '';
+
+    // API Key 確認
+    document.getElementById('api-key-btn').addEventListener('click', () => {
+      const input = document.getElementById('api-key-input').value.trim();
+      if (!input.startsWith('sk-')) {
+        alert('格式不對，OpenAI API Key 應以 sk- 開頭');
+        return;
+      }
+      apiKey = input;
+      document.getElementById('api-key-area').innerHTML = '<span class="key-ok">✓ API Key 已設定</span>';
+      document.getElementById('send-btn').disabled = false;
+
+      // 初始化狀態與記憶
+      StateManager.init(SimulatorConfig.initialState);
+      MemoryManager.init(SimulatorConfig.systemPrompt);
+
+      // 發送開場白請求
+      startGame();
+    });
+
+    // Enter 送出（Shift+Enter 換行）
+    document.getElementById('player-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        if (!document.getElementById('send-btn').disabled) sendMessage();
+      }
+    });
+
+    document.getElementById('send-btn').addEventListener('click', sendMessage);
+
+    // 開場白：讓 AI 描述起始場景
+    async function startGame() {
+      appendStory('loading', '世界正在生成中...');
+      try {
+        MemoryManager.add('user', '請描述我的起始場景，讓我感受到這個世界的氛圍。');
+        const raw = await AIApi.call(MemoryManager.getMessages(), apiKey);
+        const { story, delta } = AIApi.parseResponse(raw);
+        MemoryManager.add('assistant', raw);
+        StateManager.applyDelta(delta);
+        removeLoading();
+        appendStory('ai', story);
+      } catch (err) {
+        removeLoading();
+        appendStory('error', '錯誤：' + err.message);
+      }
+    }
+
+    // 玩家送出行動
+    async function sendMessage() {
+      const input = document.getElementById('player-input');
+      const text = input.value.trim();
+      if (!text) return;
+
+      input.value = '';
+      appendStory('player', text);
+      appendStory('loading', 'AI 思考中...');
+      document.getElementById('send-btn').disabled = true;
+
+      try {
+        MemoryManager.add('user', text);
+        const raw = await AIApi.call(MemoryManager.getMessages(), apiKey);
+        const { story, delta } = AIApi.parseResponse(raw);
+        MemoryManager.add('assistant', raw);
+        StateManager.applyDelta(delta);
+        removeLoading();
+        appendStory('ai', story);
+      } catch (err) {
+        removeLoading();
+        appendStory('error', '錯誤：' + err.message);
+      }
+
+      document.getElementById('send-btn').disabled = false;
+    }
+
+    // 新增一則劇情到 log
+    function appendStory(type, text) {
+      const log = document.getElementById('story-log');
+      const div = document.createElement('div');
+      div.className = `story-entry ${type}`;
+      if (type === 'loading') div.dataset.loading = 'true';
+      div.textContent = text;
+      log.appendChild(div);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    // 移除 loading 訊息
+    function removeLoading() {
+      const el = document.querySelector('[data-loading="true"]');
+      if (el) el.remove();
+    }
+  </script>
+
+</body>
+</html>
