@@ -46,7 +46,13 @@ const StateManager = {
     if (delta.hp_delta)     this.current.hp = Math.min(this.current.max_hp, Math.max(0, this.current.hp + delta.hp_delta));
     if (delta.gold_delta)   this.current.gold = Math.max(0, this.current.gold + delta.gold_delta);
     if (delta.location)     this.current.location = delta.location;
-    if (delta.add_items)    this.current.inventory.push(...delta.add_items);
+    if (delta.add_items) {
+    delta.add_items.forEach(item => {
+        if (!this.current.inventory.includes(item)) {
+        this.current.inventory.push(item);
+        }
+    });
+    }
     if (delta.remove_items) this.current.inventory = this.current.inventory.filter(i => !delta.remove_items.includes(i));
     if (delta.extra)        this.current.extra = { ...this.current.extra, ...delta.extra };
     this.render();

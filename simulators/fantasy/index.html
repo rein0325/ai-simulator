@@ -283,9 +283,13 @@
     }
 
     // ===== 繼續遊戲 / AI 生成 =====
+    let isProcessing = false;
     let chapterCount = 1;
 
     async function continueGame(customPrompt = null) {
+    if (isProcessing) return;
+    isProcessing = true;
+
     appendStory('loading', 'AI 思考中...');
     setSuggestionsLoading(true);
 
@@ -300,10 +304,8 @@
         appendStory('ai', story);
         updateSuggestions(suggestions);
 
-        // 非同步存記憶到 DB
         MemoryManager.saveToDB(PLAYER_ID, SimulatorConfig.theme);
 
-        // 檢查是否需要壓縮記憶
         if (MemoryManager.shouldCompress()) {
         chapterCount++;
         MemoryManager.compress(PLAYER_ID, SimulatorConfig.theme, window._apiKey, chapterCount);
@@ -315,6 +317,7 @@
     }
 
     setSuggestionsLoading(false);
+    isProcessing = false;
     }
 
     // ===== 玩家輸入 =====
