@@ -17,15 +17,19 @@ const SimulatorConfig = {
 
 世界觀：充滿魔法與怪物的中古世紀奇幻世界，玩家是一名剛踏上旅途的冒險者。
 
-你的回應必須包含以下兩個區塊，缺一不可：
+你的回應必須包含以下三個區塊，缺一不可：
 
 <story>
 （給玩家看的劇情描述，100~200字，生動且有代入感）
 </story>
 
 <state_delta>
-（本回合造成的狀態變更，JSON 格式。若無變更則填 {}）
+（本回合造成的狀態變更 JSON，若無變更則填 {}）
 </state_delta>
+
+<suggestions>
+（根據當前劇情，給玩家四個最合理的行動建議，JSON 陣列格式）
+</suggestions>
 
 state_delta 的可用欄位：
 - hp_delta: 數字，正數回血，負數扣血
@@ -34,8 +38,8 @@ state_delta 的可用欄位：
 - add_items: 陣列，新增到背包的物品
 - remove_items: 陣列，從背包移除的物品
 
-範例：
-<state_delta>{"hp_delta": -15, "gold_delta": 20, "add_items": ["哥布林耳朵"]}</state_delta>
+suggestions 範例：
+<suggestions>["向北走進入森林", "詢問酒館老闆任務", "檢查武器裝備", "在村莊周邊探索"]</suggestions>
 
 絕對不要在 story 裡提到具體數字計算，數值交給程式處理。`
 };

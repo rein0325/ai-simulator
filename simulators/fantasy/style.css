@@ -252,3 +252,30 @@ textarea:focus { outline: none; border-color: var(--accent-dim); }
   width: 100%;
   transition: width 0.4s ease;
 }
+.suggestions {
+  display: flex;
+  gap: 8px;
+  padding: 10px 20px 0;
+  flex-wrap: wrap;
+}
+
+.suggest-btn {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  padding: 6px 12px;
+  font-size: 13px;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+  text-align: left;
+}
+.suggest-btn:hover {
+  border-color: var(--accent-dim);
+  color: var(--text);
+}
+.suggest-btn.loading {
+  opacity: 0.4;
+  pointer-events: none;
+}

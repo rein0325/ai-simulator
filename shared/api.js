@@ -37,22 +37,32 @@ const AIApi = {
     return data.candidates[0].content.parts[0].text;
   },
 
-  // 這個函式不變，直接沿用
-  parseResponse(raw) {
+    parseResponse(raw) {
     const storyMatch = raw.match(/<story>([\s\S]*?)<\/story>/);
     const deltaMatch = raw.match(/<state_delta>([\s\S]*?)<\/state_delta>/);
+    const suggestMatch = raw.match(/<suggestions>([\s\S]*?)<\/suggestions>/);
 
     const story = storyMatch ? storyMatch[1].trim() : raw.trim();
     let delta = {};
+    let suggestions = ['向前探索', '查看背包', '原地休息', '與人交談'];
 
     if (deltaMatch) {
-      try {
+        try {
         delta = JSON.parse(deltaMatch[1].trim());
-      } catch {
-        console.warn('state_delta 解析失敗，忽略本輪狀態更新');
-      }
+        } catch {
+        console.warn('state_delta 解析失敗');
+        }
     }
 
-    return { story, delta };
-  }
+    if (suggestMatch) {
+        try {
+        const parsed = JSON.parse(suggestMatch[1].trim());
+        if (Array.isArray(parsed) && parsed.length === 4) suggestions = parsed;
+        } catch {
+        console.warn('suggestions 解析失敗');
+        }
+    }
+
+    return { story, delta, suggestions };
+    }
 };
