@@ -345,6 +345,25 @@ textarea:focus { outline: none; border-color: var(--accent-dim); }
   line-height: 1.5;
   opacity: 0.8;
 }
+#restart-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  padding: 8px 12px;
+  font-size: 12px;
+  font-family: sans-serif;
+  cursor: pointer;
+  width: 100%;
+  transition: border-color 0.2s, color 0.2s;
+}
+#restart-btn:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+}
 
-/* gate-box 裡的標題和說明文字也加強 */
-
+.story-entry.cooldown {
+  color: var(--accent);
+  font-family: sans-serif;
+  font-size: 13px;
+}

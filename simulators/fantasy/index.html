@@ -110,6 +110,9 @@
         <label>背包</label>
         <span id="stat-inventory">（空）</span>
       </div>
+      <div class="stat-block" style="margin-top: auto; padding-top: 20px; border-top: 1px solid var(--border);">
+        <button id="restart-btn" onclick="confirmRestart()">⟳ 重新開始</button>
+      </div>
     </aside>
   </main>
 
@@ -373,6 +376,77 @@
       const el = document.querySelector('[data-loading="true"]');
       if (el) el.remove();
     }
+
+    // ===== 重開遊戲 =====
+    async function confirmRestart() {
+    if (!confirm('確定要重新開始嗎？目前的存檔將會清除。')) return;
+    try {
+        // 清除 DB 資料
+        await DB.savePlayer({
+        player_id: PLAYER_ID,
+        simulator_id: SimulatorConfig.theme,
+        name: '',
+        gender: '',
+        weapon_type: '',
+        hp: 100,
+        max_hp: 100,
+        gold: 0,
+        location: '橡木鎮',
+        inventory_json: [],
+        extra_json: {}
+        });
+        await DB.saveMemory(PLAYER_ID, SimulatorConfig.theme, []);
+    } catch (err) {
+        console.warn('清除存檔失敗：', err.message);
+    }
+    // 清除本地記憶，重新開始
+    MemoryManager.init(SimulatorConfig.systemPrompt);
+    document.getElementById('story-log').innerHTML = '';
+    startNewGame();
+    }
+
+    // ===== API 限流自動重試 =====
+    async function callWithRetry(messages, apiKey, maxRetry = 3) {
+    for (let i = 0; i < maxRetry; i++) {
+        try {
+        return await AIApi.call(messages, apiKey);
+        } catch (err) {
+        const waitMatch = err.message.match(/retry in ([\d.]+)s/);
+        if (waitMatch && i < maxRetry - 1) {
+            const waitSec = Math.ceil(parseFloat(waitMatch[1]));
+            await showCooldown(waitSec);
+        } else {
+            throw err;
+        }
+        }
+    }
+    }
+
+    function showCooldown(seconds) {
+    return new Promise(resolve => {
+        const log = document.getElementById('story-log');
+        const div = document.createElement('div');
+        div.className = 'story-entry cooldown';
+        div.dataset.cooldown = 'true';
+        log.appendChild(div);
+        log.scrollTop = log.scrollHeight;
+
+        let remaining = seconds;
+        div.textContent = `⏳ API 請求頻率限制，${remaining} 秒後自動重試...`;
+
+        const timer = setInterval(() => {
+        remaining--;
+        if (remaining <= 0) {
+            clearInterval(timer);
+            div.remove();
+            resolve();
+        } else {
+            div.textContent = `⏳ API 請求頻率限制，${remaining} 秒後自動重試...`;
+        }
+        }, 1000);
+    });
+    }
+
   </script>
 
 </body>
