@@ -292,7 +292,7 @@
     try {
         const prompt = customPrompt || '請繼續描述當前場景，給出合理的劇情發展與行動建議。';
         MemoryManager.add('user', prompt);
-        const raw = await AIApi.call(MemoryManager.getMessages(), window._apiKey);
+        const raw = await callWithRetry(MemoryManager.getMessages(), window._apiKey);
         const { story, delta, suggestions } = AIApi.parseResponse(raw);
         MemoryManager.add('assistant', raw);
         StateManager.applyDelta(delta);
