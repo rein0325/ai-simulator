@@ -8,6 +8,7 @@
 </head>
 <body>
 
+  <!-- 密碼遮罩 -->
   <div id="gate">
     <div class="gate-box">
       <div class="gate-icon">⚔️</div>
@@ -18,10 +19,41 @@
       <div id="gate-step2" style="display:none; flex-direction:column; gap:14px; width:100%;">
         <hr style="border-color: var(--border); width:100%;">
         <p>首次使用，請輸入 Gemini API Key</p>
-        <input type="password" id="key-input" placeholder="AIza...">
+        <input type="password" id="key-input" placeholder="AQ...">
         <button onclick="confirmKey()">確認並開始</button>
       </div>
       <span id="gate-error"></span>
+    </div>
+  </div>
+
+  <!-- 武器選擇遮罩 -->
+  <div id="weapon-gate" style="display:none;">
+    <div class="gate-box" style="max-width:420px;">
+      <div class="gate-icon">🗡️</div>
+      <h2 id="weapon-gate-title">選擇慣用武器</h2>
+      <p id="weapon-gate-desc">村民從倉庫裡找出了幾樣舊武器，讓你挑一件防身。</p>
+      <div class="weapon-grid">
+        <button class="weapon-btn" onclick="selectWeapon('劍盾', '生鏽短劍', this)">
+          <span class="w-icon">🗡️</span>
+          <span class="w-name">劍與盾</span>
+          <span class="w-desc">平衡的攻防，新手首選</span>
+        </button>
+        <button class="weapon-btn" onclick="selectWeapon('雙手斧', '破舊戰斧', this)">
+          <span class="w-icon">🪓</span>
+          <span class="w-name">雙手斧</span>
+          <span class="w-desc">高傷害，但速度較慢</span>
+        </button>
+        <button class="weapon-btn" onclick="selectWeapon('弓箭', '獵人短弓', this)">
+          <span class="w-icon">🏹</span>
+          <span class="w-name">弓箭</span>
+          <span class="w-desc">遠程攻擊，靈活機動</span>
+        </button>
+        <button class="weapon-btn" onclick="selectWeapon('魔法杖', '學徒木杖', this)">
+          <span class="w-icon">🪄</span>
+          <span class="w-name">魔法杖</span>
+          <span class="w-desc">魔法天賦，潛力無限</span>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -33,26 +65,32 @@
   <main>
     <section class="story-panel">
       <div id="story-log">
-        <div class="story-entry system">
-          輸入密碼後開始冒險。
-        </div>
+        <div class="story-entry system">輸入密碼後開始冒險。</div>
       </div>
       <div class="input-area">
         <div class="input-row">
-            <textarea id="player-input" placeholder="自定義行動，或點選下方建議" rows="2"></textarea>
-            <button id="send-btn">送出</button>
+          <textarea id="player-input" placeholder="自定義行動，或點選下方建議" rows="2"></textarea>
+          <button id="send-btn">送出</button>
         </div>
         <div class="suggestions" id="suggestions">
-            <button class="suggest-btn" onclick="selectSuggest(this)">...</button>
-            <button class="suggest-btn" onclick="selectSuggest(this)">...</button>
-            <button class="suggest-btn" onclick="selectSuggest(this)">...</button>
-            <button class="suggest-btn" onclick="selectSuggest(this)">...</button>
+          <button class="suggest-btn" onclick="selectSuggest(this)">...</button>
+          <button class="suggest-btn" onclick="selectSuggest(this)">...</button>
+          <button class="suggest-btn" onclick="selectSuggest(this)">...</button>
+          <button class="suggest-btn" onclick="selectSuggest(this)">...</button>
         </div>
       </div>
     </section>
 
     <aside class="status-panel">
       <h2>角色狀態</h2>
+      <div class="stat-block">
+        <label>名字</label>
+        <span id="stat-name">???</span>
+      </div>
+      <div class="stat-block">
+        <label>慣用武器</label>
+        <span id="stat-weapon">（無）</span>
+      </div>
       <div class="stat-block">
         <label>生命值</label>
         <div class="hp-bar-track">
@@ -62,15 +100,15 @@
       </div>
       <div class="stat-block">
         <label>金幣</label>
-        <span id="stat-gold">30</span>
+        <span id="stat-gold">0</span>
       </div>
       <div class="stat-block">
         <label>位置</label>
-        <span id="stat-location">迷霧村莊</span>
+        <span id="stat-location">橡木鎮</span>
       </div>
       <div class="stat-block">
         <label>背包</label>
-        <span id="stat-inventory">生鏽短劍、麵包 x2</span>
+        <span id="stat-inventory">（空）</span>
       </div>
     </aside>
   </main>
@@ -78,11 +116,14 @@
   <script src="../../shared/api.js"></script>
   <script src="../../shared/state.js"></script>
   <script src="../../shared/memory.js"></script>
+  <script src="../../shared/db.js"></script>
   <script src="config.js"></script>
 
   <script>
-    const GATE_PASSWORD = '123564';  // ← 改這裡
+    const GATE_PASSWORD = '你的密碼';  // ← 改這裡
+    const PLAYER_ID = 'rein_fantasy_001';  // ← 改成你的ID
 
+    // ===== 密碼驗證 =====
     function unlock() {
       const pwInput = document.getElementById('gate-input').value;
       if (pwInput !== GATE_PASSWORD) {
@@ -109,19 +150,160 @@
       startApp(key);
     }
 
-    function startApp(apiKey) {
-      window._apiKey = apiKey;
-      document.getElementById('gate').style.display = 'none';
-      StateManager.init(SimulatorConfig.initialState);
-      MemoryManager.init(SimulatorConfig.systemPrompt);
-      startGame();
-    }
-
     document.getElementById('gate-btn').addEventListener('click', unlock);
     document.getElementById('gate-input').addEventListener('keydown', (e) => {
       if (e.key === 'Enter') unlock();
     });
 
+    // ===== 遊戲初始化 =====
+    async function startApp(apiKey) {
+      window._apiKey = apiKey;
+      document.getElementById('gate').style.display = 'none';
+
+      appendStory('loading', '讀取冒險存檔中...');
+
+      // 嘗試從 DB 讀取既有玩家資料
+      try {
+        const dbPlayer = await DB.getPlayer(PLAYER_ID, SimulatorConfig.theme);
+        if (dbPlayer) {
+          // 有存檔，直接載入
+          StateManager.init(SimulatorConfig.initialState);
+          StateManager.loadFromDB(dbPlayer);
+          MemoryManager.init(SimulatorConfig.systemPrompt);
+          const dbMemory = await DB.getMemory(PLAYER_ID, SimulatorConfig.theme);
+          if (dbMemory && dbMemory.length > 0) {
+            MemoryManager.loadFromDB(dbMemory);
+          }
+          removeLoading();
+          appendStory('system', `歡迎回來，${dbPlayer.name}。你的冒險繼續了。`);
+          await continueGame();
+          return;
+        }
+      } catch (err) {
+        console.warn('讀取存檔失敗，開始新遊戲：', err.message);
+      }
+
+      // 沒有存檔，開始新遊戲
+      removeLoading();
+      startNewGame();
+    }
+
+    // ===== 新遊戲流程 =====
+    function startNewGame() {
+      StateManager.init({
+        ...SimulatorConfig.initialState,
+        player_id: PLAYER_ID,
+        simulator_id: SimulatorConfig.theme
+      });
+      MemoryManager.init(SimulatorConfig.systemPrompt);
+
+      // 顯示固定開場文字
+      const opening = `耳邊傳來微弱的風聲，夾雜著樹葉摩擦的沙沙聲。
+你緩緩睜開雙眼，映入眼簾的是一片陌生的天空。全身傳來陣陣劇痛，腦海中只剩下零碎而模糊的記憶。
+昨夜，你原本正踏上前往下一座城鎮的旅程，卻在經過森林時遭到一群盜賊伏擊。他們奪走了你的武器、裝備、金幣，甚至連象徵冒險者身分的背包也沒有留下。
+幸運的是，你還活著。
+你勉強支撐起身體，環顧四周。眼前是一片寧靜的草原，遠方炊煙裊裊，一座小村莊靜靜坐落在森林邊緣。
+村口的木牌上刻著幾個略顯斑駁的大字——「橡木鎮」
+現在的你，身無分文，沒有裝備，沒有補給，也沒有任何人知道你的來歷。
+過去的榮耀已經毫無意義。
+若想再次成為受人敬仰的冒險者，你只能從最基礎的工作開始，賺取第一枚金幣、打造第一件裝備、完成第一個委託，一步一步重新站起來。
+這裡，將是你全新冒險的起點。
+你的傳奇，即將重新開始。`;
+
+      appendStory('ai', opening);
+
+      // 詢問名字
+      setTimeout(() => {
+        appendStory('system', '一位老村民走近你，蹲下身來打量著你。「年輕人，你還活著真是奇蹟。敢問你叫什麼名字？」');
+        setInputMode('name');
+      }, 800);
+    }
+
+    // 輸入模式：name / weapon / normal
+    let inputMode = 'normal';
+    let pendingWeapon = null;
+
+    function setInputMode(mode) {
+      inputMode = mode;
+      const input = document.getElementById('player-input');
+      const sendBtn = document.getElementById('send-btn');
+      if (mode === 'name') {
+        input.placeholder = '輸入你的角色名字...';
+        input.focus();
+        setSuggestionsLoading(true);
+      } else if (mode === 'normal') {
+        input.placeholder = '自定義行動，或點選下方建議';
+        setSuggestionsLoading(false);
+      }
+    }
+
+    async function handleNameInput(name) {
+      if (!name || name.trim().length === 0) return;
+      StateManager.current.name = name.trim();
+      StateManager.render();
+      appendStory('player', name.trim());
+      appendStory('system', `老村民點了點頭，「${name.trim()}，好名字。你現在身上什麼都沒有，村裡的倉庫還有幾件舊武器，你先挑一件防身吧。」`);
+
+      // 顯示武器選擇
+      document.getElementById('weapon-gate').style.display = 'flex';
+    }
+
+    async function selectWeapon(weaponType, weaponItem, btn) {
+      document.getElementById('weapon-gate').style.display = 'none';
+
+      StateManager.current.weapon_type = weaponType;
+      StateManager.current.inventory = [weaponItem];
+      StateManager.render();
+
+      appendStory('system', `你拿起了【${weaponItem}】，${getWeaponDesc(weaponType)}`);
+
+      // 儲存角色到 DB
+      StateManager.current.player_id = PLAYER_ID;
+      StateManager.current.simulator_id = SimulatorConfig.theme;
+      await StateManager.saveToDB();
+
+      // 讓 AI 接手，生成正式進入橡木鎮的場景
+      setInputMode('normal');
+      await continueGame(`玩家名叫「${StateManager.current.name}」，慣用武器是「${weaponType}」，手持「${weaponItem}」。請描述他走進橡木鎮的場景，並給出第一批行動建議。`);
+    }
+
+    function getWeaponDesc(type) {
+      const descs = {
+        '劍盾': '雖然生鏽了，但握在手裡仍有幾分重量感。',
+        '雙手斧': '斧柄有些龜裂，但斧刃還算鋒利。',
+        '弓箭': '弓弦有些鬆弛，箭袋裡還剩五支箭。',
+        '魔法杖': '木杖頂端的魔法石微微發光，似乎還有餘韻。'
+      };
+      return descs[type] || '這件武器將陪伴你重新開始。';
+    }
+
+    // ===== 繼續遊戲 / AI 生成 =====
+    async function continueGame(customPrompt = null) {
+      appendStory('loading', 'AI 思考中...');
+      setSuggestionsLoading(true);
+
+      try {
+        const prompt = customPrompt || '請繼續描述當前場景，給出合理的劇情發展與行動建議。';
+        MemoryManager.add('user', prompt);
+        const raw = await AIApi.call(MemoryManager.getMessages(), window._apiKey);
+        const { story, delta, suggestions } = AIApi.parseResponse(raw);
+        MemoryManager.add('assistant', raw);
+        StateManager.applyDelta(delta);
+        removeLoading();
+        appendStory('ai', story);
+        updateSuggestions(suggestions);
+
+        // 非同步存記憶到 DB
+        MemoryManager.saveToDB(PLAYER_ID, SimulatorConfig.theme);
+      } catch (err) {
+        removeLoading();
+        appendStory('error', '錯誤：' + err.message);
+      }
+
+      setSuggestionsLoading(false);
+    }
+
+    // ===== 玩家輸入 =====
     document.getElementById('player-input').addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
@@ -129,6 +311,23 @@
       }
     });
     document.getElementById('send-btn').addEventListener('click', sendMessage);
+
+    async function sendMessage() {
+      const input = document.getElementById('player-input');
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = '';
+
+      if (inputMode === 'name') {
+        await handleNameInput(text);
+        return;
+      }
+
+      appendStory('player', text);
+      document.getElementById('send-btn').disabled = true;
+      await continueGame(text);
+      document.getElementById('send-btn').disabled = false;
+    }
 
     function selectSuggest(btn) {
       if (btn.textContent === '...' || btn.classList.contains('loading')) return;
@@ -147,54 +346,6 @@
       document.querySelectorAll('.suggest-btn').forEach(btn => {
         btn.classList.toggle('loading', loading);
       });
-    }
-
-    async function startGame() {
-      appendStory('loading', '世界正在生成中...');
-      setSuggestionsLoading(true);
-      try {
-        MemoryManager.add('user', '請描述我的起始場景，讓我感受到這個世界的氛圍。');
-        const raw = await AIApi.call(MemoryManager.getMessages(), window._apiKey);
-        const { story, delta, suggestions } = AIApi.parseResponse(raw);
-        MemoryManager.add('assistant', raw);
-        StateManager.applyDelta(delta);
-        removeLoading();
-        appendStory('ai', story);
-        updateSuggestions(suggestions);
-      } catch (err) {
-        removeLoading();
-        appendStory('error', '錯誤：' + err.message);
-      }
-      setSuggestionsLoading(false);
-    }
-
-    async function sendMessage() {
-      const input = document.getElementById('player-input');
-      const text = input.value.trim();
-      if (!text) return;
-
-      input.value = '';
-      appendStory('player', text);
-      appendStory('loading', 'AI 思考中...');
-      document.getElementById('send-btn').disabled = true;
-      setSuggestionsLoading(true);
-
-      try {
-        MemoryManager.add('user', text);
-        const raw = await AIApi.call(MemoryManager.getMessages(), window._apiKey);
-        const { story, delta, suggestions } = AIApi.parseResponse(raw);
-        MemoryManager.add('assistant', raw);
-        StateManager.applyDelta(delta);
-        removeLoading();
-        appendStory('ai', story);
-        updateSuggestions(suggestions);
-      } catch (err) {
-        removeLoading();
-        appendStory('error', '錯誤：' + err.message);
-      }
-
-      document.getElementById('send-btn').disabled = false;
-      setSuggestionsLoading(false);
     }
 
     function appendStory(type, text) {
