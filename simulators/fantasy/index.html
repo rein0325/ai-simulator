@@ -157,35 +157,37 @@
 
     // ===== 遊戲初始化 =====
     async function startApp(apiKey) {
-      window._apiKey = apiKey;
-      document.getElementById('gate').style.display = 'none';
+    window._apiKey = apiKey;
+    document.getElementById('gate').style.display = 'none';
 
-      appendStory('loading', '讀取冒險存檔中...');
+    appendStory('loading', '讀取冒險存檔中...');
 
-      // 嘗試從 DB 讀取既有玩家資料
-      try {
+    try {
         const dbPlayer = await DB.getPlayer(PLAYER_ID, SimulatorConfig.theme);
         if (dbPlayer) {
-          // 有存檔，直接載入
-          StateManager.init(SimulatorConfig.initialState);
-          StateManager.loadFromDB(dbPlayer);
-          MemoryManager.init(SimulatorConfig.systemPrompt);
-          const dbMemory = await DB.getMemory(PLAYER_ID, SimulatorConfig.theme);
-          if (dbMemory && dbMemory.length > 0) {
-            MemoryManager.loadFromDB(dbMemory);
-          }
-          removeLoading();
-          appendStory('system', `歡迎回來，${dbPlayer.name}。你的冒險繼續了。`);
-          await continueGame();
-          return;
-        }
-      } catch (err) {
-        console.warn('讀取存檔失敗，開始新遊戲：', err.message);
-      }
+        StateManager.init(SimulatorConfig.initialState);
+        StateManager.loadFromDB(dbPlayer);
+        MemoryManager.init(SimulatorConfig.systemPrompt);
 
-      // 沒有存檔，開始新遊戲
-      removeLoading();
-      startNewGame();
+        const [dbMemory, dbSummary] = await Promise.all([
+            DB.getMemory(PLAYER_ID, SimulatorConfig.theme),
+            DB.getSummary(PLAYER_ID, SimulatorConfig.theme)
+        ]);
+
+        if (dbMemory && dbMemory.length > 0) MemoryManager.loadFromDB(dbMemory);
+        if (dbSummary) MemoryManager.loadSummary(dbSummary);
+
+        removeLoading();
+        appendStory('system', `歡迎回來，${dbPlayer.name}。你的冒險繼續了。`);
+        await continueGame();
+        return;
+        }
+    } catch (err) {
+        console.warn('讀取存檔失敗，開始新遊戲：', err.message);
+    }
+
+    removeLoading();
+    startNewGame();
     }
 
     // ===== 新遊戲流程 =====
@@ -278,11 +280,13 @@
     }
 
     // ===== 繼續遊戲 / AI 生成 =====
-    async function continueGame(customPrompt = null) {
-      appendStory('loading', 'AI 思考中...');
-      setSuggestionsLoading(true);
+    let chapterCount = 1;
 
-      try {
+    async function continueGame(customPrompt = null) {
+    appendStory('loading', 'AI 思考中...');
+    setSuggestionsLoading(true);
+
+    try {
         const prompt = customPrompt || '請繼續描述當前場景，給出合理的劇情發展與行動建議。';
         MemoryManager.add('user', prompt);
         const raw = await AIApi.call(MemoryManager.getMessages(), window._apiKey);
@@ -295,12 +299,19 @@
 
         // 非同步存記憶到 DB
         MemoryManager.saveToDB(PLAYER_ID, SimulatorConfig.theme);
-      } catch (err) {
+
+        // 檢查是否需要壓縮記憶
+        if (MemoryManager.shouldCompress()) {
+        chapterCount++;
+        MemoryManager.compress(PLAYER_ID, SimulatorConfig.theme, window._apiKey, chapterCount);
+        }
+
+    } catch (err) {
         removeLoading();
         appendStory('error', '錯誤：' + err.message);
-      }
+    }
 
-      setSuggestionsLoading(false);
+    setSuggestionsLoading(false);
     }
 
     // ===== 玩家輸入 =====
