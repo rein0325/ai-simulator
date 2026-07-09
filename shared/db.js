@@ -44,5 +44,10 @@ const DB = {
       summary,
       key_events_json: keyEvents
     });
+  },
+
+  async clearSummary(playerId, simulatorId) {
+    return await this.post('clearSummary', { player_id: playerId, simulator_id: simulatorId });
   }
+
 };

@@ -442,6 +442,7 @@
           extra_json: {}
         });
         await DB.saveMemory(PLAYER_ID, SimulatorConfig.theme, []);
+        await DB.clearSummary(PLAYER_ID, SimulatorConfig.theme);
       } catch (err) {
         console.warn('清除存檔失敗：', err.message);
       }
