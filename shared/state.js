@@ -70,6 +70,15 @@ const StateManager = {
     if (delta.location)         this.current.location = delta.location;
     if (delta.guild_rank)       this.current.guild_rank = delta.guild_rank;
 
+    if (delta.col_delta)    this.current.copper = Math.max(0, (this.current.copper || 0) + delta.col_delta);
+    if (delta.floor_delta)  this.current.extra.floor = (this.current.extra.floor || 1) + delta.floor_delta;
+    if (delta.skill_up) {
+    if (!this.current.extra.skills) this.current.extra.skills = {};
+    Object.entries(delta.skill_up).forEach(([skill, val]) => {
+        this.current.extra.skills[skill] = (this.current.extra.skills[skill] || 0) + val;
+    });
+    }
+
     if (delta.add_items) {
       delta.add_items.forEach(item => {
         if (!this.current.inventory.includes(item)) {
@@ -161,5 +170,7 @@ const StateManager = {
     if (el('stat-reputation')) el('stat-reputation').textContent = s.reputation;
     if (el('stat-weapon'))     el('stat-weapon').textContent = s.weapon_type || '（無）';
     if (el('stat-inventory'))  el('stat-inventory').textContent = s.inventory.length > 0 ? s.inventory.join('、') : '（空）';
+    if (el('stat-floor')) el('stat-floor').textContent = `${this.current.extra?.floor || 1}F`;
+    if (el('stat-col'))   el('stat-col').textContent = this.current.copper || 0;
   }
 };

@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SAO：艾恩葛朗特</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div id="gate">
+    <div class="gate-box">
+      <div class="gate-icon">⚔️</div>
+      <h2>艾恩葛朗特</h2>
+      <p>輸入密碼以連線</p>
+      <input type="password" id="gate-input" placeholder="密碼" autofocus>
+      <button id="gate-btn">連線</button>
+      <div id="gate-step2" style="display:none; flex-direction:column; gap:14px; width:100%;">
+        <hr style="border-color: var(--border); width:100%;">
+        <p>首次使用，請輸入 Gemini API Key</p>
+        <input type="password" id="key-input" placeholder="AQ...">
+        <button onclick="confirmKey()">確認並開始</button>
+      </div>
+      <span id="gate-error"></span>
+    </div>
+  </div>
+
+  <div id="weapon-gate" style="display:none;">
+    <div class="gate-box" style="max-width:420px;">
+      <div class="gate-icon">🎮</div>
+      <h2>選擇初始武器</h2>
+      <p>在艾恩葛朗特中，你的武器將決定你的戰鬥風格。</p>
+      <div class="weapon-grid">
+        <button class="weapon-btn" onclick="selectWeapon('單手直劍', '新手短劍', this)">
+          <span class="w-icon">⚔️</span>
+          <span class="w-name">單手直劍</span>
+          <span class="w-desc">攻速快，均衡型，最多玩家的選擇</span>
+        </button>
+        <button class="weapon-btn" onclick="selectWeapon('單手彎刀', '新手彎刀', this)">
+          <span class="w-icon">🗡️</span>
+          <span class="w-name">單手彎刀</span>
+          <span class="w-desc">暴擊率高，爆發傷害型</span>
+        </button>
+        <button class="weapon-btn" onclick="selectWeapon('直劍盾牌', '新手短劍+木盾', this)">
+          <span class="w-icon">🛡️</span>
+          <span class="w-name">直劍＋盾牌</span>
+          <span class="w-desc">防禦型，適合耐久戰</span>
+        </button>
+        <button class="weapon-btn" onclick="selectWeapon('投擲武器', '新手飛鏢×10', this)">
+          <span class="w-icon">🏹</span>
+          <span class="w-name">遠程投擲</span>
+          <span class="w-desc">靈活機動，適合保持距離</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="quest-panel" style="display:none;">
+    <div class="quest-box">
+      <div class="quest-header">
+        <button class="quest-tab active" onclick="switchQuestTab('main', event)">主線</button>
+        <button class="quest-tab" onclick="switchQuestTab('side', event)">支線</button>
+        <button class="quest-close" onclick="closeQuestPanel()">✕</button>
+      </div>
+      <div id="quest-main-list" class="quest-list"></div>
+      <div id="quest-side-list" class="quest-list" style="display:none;"></div>
+    </div>
+  </div>
+
+  <header>
+    <a href="../../index.html" class="back-btn">← 選單</a>
+    <h1>艾恩葛朗特</h1>
+    <button id="restart-btn" onclick="confirmRestart()">⟳</button>
+  </header>
+
+  <div class="status-bar">
+    <div class="status-row">
+      <div class="stat-chip name-chip">
+        <span id="stat-name">???</span>
+        <span id="stat-lv" class="chip-sub">Lv.1</span>
+      </div>
+      <div class="stat-chip">
+        <span class="chip-label">樓層</span>
+        <span id="stat-floor">1F</span>
+      </div>
+      <div class="stat-chip">
+        <span class="chip-label">Col</span>
+        <span id="stat-col">0</span>
+      </div>
+      <div class="stat-chip location-chip">
+        <span class="chip-label">📍</span>
+        <span id="stat-location">起始之鎮</span>
+      </div>
+    </div>
+    <div class="status-row">
+      <div class="bar-group">
+        <div class="bar-label">HP <span id="stat-hp">100/100</span></div>
+        <div class="bar-track"><div id="stat-hp-bar" class="bar-fill hp-fill"></div></div>
+      </div>
+      <div class="bar-group">
+        <div class="bar-label">EXP <span id="stat-exp">0/100</span></div>
+        <div class="bar-track"><div id="stat-exp-bar" class="bar-fill exp-fill"></div></div>
+      </div>
+    </div>
+    <div class="status-row status-row-bottom">
+      <div class="stat-chip weapon-chip">
+        <span class="chip-label">⚔️</span>
+        <span id="stat-weapon">（無）</span>
+      </div>
+      <button class="quest-btn" onclick="openQuestPanel()">📋 任務</button>
+    </div>
+    <div class="inventory-row" onclick="toggleInventory()">
+      <span class="chip-label">🎒 背包</span>
+      <span id="stat-inventory">（空）</span>
+      <span class="inv-toggle">▾</span>
+    </div>
+  </div>
+
+  <div id="story-log"></div>
+
+  <div class="input-area">
+    <div class="input-row">
+      <textarea id="player-input" placeholder="自定義行動，或點選下方建議" rows="2"></textarea>
+      <button id="send-btn">送出</button>
+    </div>
+    <div class="suggestions" id="suggestions">
+      <button class="suggest-btn" onclick="selectSuggest(this)">...</button>
+      <button class="suggest-btn" onclick="selectSuggest(this)">...</button>
+      <button class="suggest-btn" onclick="selectSuggest(this)">...</button>
+      <button class="suggest-btn" onclick="selectSuggest(this)">...</button>
+    </div>
+  </div>
+
+  <script src="../../shared/api.js"></script>
+  <script src="../../shared/state.js"></script>
+  <script src="../../shared/memory.js"></script>
+  <script src="../../shared/db.js"></script>
+  <script src="config.js"></script>
+
+  <script>
+    const GATE_PASSWORD = '你的密碼';  // ← 改這裡
+    const PLAYER_ID = 'rein_sao_001';
+
+    function unlock() {
+      const pwInput = document.getElementById('gate-input').value;
+      if (pwInput !== GATE_PASSWORD) {
+        document.getElementById('gate-error').textContent = '密碼錯誤';
+        document.getElementById('gate-input').value = '';
+        document.getElementById('gate-input').focus();
+        return;
+      }
+      const savedKey = localStorage.getItem('gemini_api_key');
+      if (savedKey) {
+        startApp(savedKey);
+      } else {
+        document.getElementById('gate-step2').style.display = 'flex';
+      }
+    }
+
+    function confirmKey() {
+      const key = document.getElementById('key-input').value.trim();
+      if (!key) {
+        document.getElementById('gate-error').textContent = '請輸入 API Key';
+        return;
+      }
+      localStorage.setItem('gemini_api_key', key);
+      startApp(key);
+    }
+
+    document.getElementById('gate-btn').addEventListener('click', unlock);
+    document.getElementById('gate-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') unlock();
+    });
+
+    async function startApp(apiKey) {
+      window._apiKey = apiKey;
+      document.getElementById('gate').style.display = 'none';
+      appendStory('loading', '連線中...');
+
+      try {
+        const dbPlayer = await DB.getPlayer(PLAYER_ID, SimulatorConfig.theme);
+        if (dbPlayer && dbPlayer.name) {
+          StateManager.init(SimulatorConfig.initialState);
+          StateManager.loadFromDB(dbPlayer);
+          MemoryManager.init(SimulatorConfig.systemPrompt);
+          const [dbMemory, dbSummary] = await Promise.all([
+            DB.getMemory(PLAYER_ID, SimulatorConfig.theme),
+            DB.getSummary(PLAYER_ID, SimulatorConfig.theme)
+          ]);
+          if (dbMemory && dbMemory.length > 0) MemoryManager.loadFromDB(dbMemory);
+          if (dbSummary) MemoryManager.loadSummary(dbSummary);
+          removeLoading();
+          appendStory('system', `連線成功。歡迎回來，${dbPlayer.name}。你仍身處艾恩葛朗特。`);
+          await continueGame();
+          return;
+        }
+      } catch (err) {
+        console.warn('讀取存檔失敗：', err.message);
+      }
+
+      removeLoading();
+      startNewGame();
+    }
+
+    function startNewGame() {
+      StateManager.init({
+        ...SimulatorConfig.initialState,
+        player_id: PLAYER_ID,
+        simulator_id: SimulatorConfig.theme
+      });
+      MemoryManager.init(SimulatorConfig.systemPrompt);
+
+      const opening = `西元 2022 年 11 月 6 日。
+這一天，全球第一款完全潛行式 VRMMORPG——《Sword Art Online》正式上線。
+你戴上 NerveGear，躺在床上，輸入指令：「Link Start！」
+意識瞬間脫離現實，落入一片耀眼的光芒之中。
+當視野逐漸清晰，你發現自己站在一座巨大的廣場上。
+四周是來自世界各地的玩家，頭頂飄著各式各樣的玩家名稱。
+這裡是艾恩葛朗特第一層——起始之鎮。
+宏偉的石造建築、忙碌的 NPC 商人、遠處隱約可見的城牆……
+一切都如此真實，彷彿真的置身中世紀的奇幻城市。
+然而，就在你沉浸在這份驚嘆之中時——
+天空突然變暗。
+一個巨大的系統訊息浮現在所有人眼前。
+緊接著，遊戲設計者的聲音迴盪在整座城市上空：
+「玩家們，歡迎來到我的世界。」
+「這裡沒有登出按鈕。」
+「唯一離開的方法，就是攻略艾恩葛朗特全部一百層。」
+「如果你在遊戲中死亡——現實中的你，也會跟著死去。」
+廣場陷入一片死寂。
+然後，是撕心裂肺的哭聲與尖叫聲。
+你站在人群中，握緊了拳頭。
+這場死亡遊戲，已經正式開始。`;
+
+      appendStory('ai', opening);
+
+      setTimeout(() => {
+        appendStory('system', '混亂中，一個與你年齡相仿的玩家走近你，神情凝重但冷靜。「喂，你叫什麼名字？在這種情況下，單獨行動很危險。」');
+        setInputMode('name');
+      }, 800);
+    }
+
+    let inputMode = 'normal';
+
+    function setInputMode(mode) {
+      inputMode = mode;
+      const input = document.getElementById('player-input');
+      if (mode === 'name') {
+        input.placeholder = '輸入你的玩家名稱...';
+        input.focus();
+        setSuggestionsLoading(true);
+      } else {
+        input.placeholder = '自定義行動，或點選下方建議';
+        setSuggestionsLoading(false);
+      }
+    }
+
+    async function handleNameInput(name) {
+      if (!name || name.trim().length === 0) return;
+      StateManager.current.name = name.trim();
+      StateManager.render();
+      appendStory('player', name.trim());
+      appendStory('system', `對方點了點頭。「${name.trim()}，記住了。現在最重要的是選擇你的武器——雖然都是新手裝備，但至少能自保。」`);
+      document.getElementById('weapon-gate').style.display = 'flex';
+    }
+
+    async function selectWeapon(weaponType, weaponItem, btn) {
+      document.getElementById('weapon-gate').style.display = 'none';
+      StateManager.current.weapon_type = weaponType;
+      StateManager.current.inventory = [weaponItem];
+      StateManager.current.extra = {
+        floor: 1,
+        skills: { sword: 0, curved_sword: 0, shield: 0, throwing: 0, cooking: 0, fishing: 0 }
+      };
+      StateManager.render();
+      appendStory('system', `你選擇了【${weaponItem}】。${getWeaponDesc(weaponType)}`);
+      StateManager.current.player_id = PLAYER_ID;
+      StateManager.current.simulator_id = SimulatorConfig.theme;
+      await StateManager.saveToDB();
+      setInputMode('normal');
+      await continueGame(`玩家名叫「${StateManager.current.name}」，選擇了「${weaponType}」，持有「${weaponItem}」。請描述玩家在起始之鎮的第一步，死亡遊戲宣告後的混亂場景，並給出第一批行動建議。同時請新增主線任務「攻略第一層迷宮」。`);
+    }
+
+    function getWeaponDesc(type) {
+      const descs = {
+        '單手直劍': '劍身散發著淡淡的藍光，是艾恩葛朗特最基礎的武器。',
+        '單手彎刀': '弧形的刀身在光線下閃爍，感覺出手會比直劍更快。',
+        '直劍盾牌': '一手劍一手盾，雖然沉重，但防禦感讓人安心。',
+        '投擲武器': '十枚飛鏢靜靜躺在腰間的袋子裡，適合保持距離戰鬥。'
+      };
+      return descs[type] || '這將是你在艾恩葛朗特的第一件武器。';
+    }
+
+    let currentQuestTab = 'main';
+
+    function openQuestPanel() {
+      renderQuestPanel();
+      document.getElementById('quest-panel').style.display = 'flex';
+    }
+
+    function closeQuestPanel() {
+      document.getElementById('quest-panel').style.display = 'none';
+    }
+
+    function switchQuestTab(tab, event) {
+      currentQuestTab = tab;
+      document.querySelectorAll('.quest-tab').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+      document.getElementById('quest-main-list').style.display = tab === 'main' ? 'block' : 'none';
+      document.getElementById('quest-side-list').style.display = tab === 'side' ? 'block' : 'none';
+    }
+
+    function renderQuestPanel() {
+      const main = StateManager.current.main_quests || [];
+      const side = StateManager.current.side_quests || [];
+      const mainEl = document.getElementById('quest-main-list');
+      const sideEl = document.getElementById('quest-side-list');
+      mainEl.innerHTML = main.length > 0
+        ? main.map(q => `<div class="quest-item">📌 ${q}</div>`).join('')
+        : '<div class="quest-empty">目前沒有主線任務</div>';
+      sideEl.innerHTML = side.length > 0
+        ? side.map(q => `<div class="quest-item">📎 ${q}</div>`).join('')
+        : '<div class="quest-empty">目前沒有支線任務</div>';
+    }
+
+    let inventoryOpen = false;
+    function toggleInventory() {
+      inventoryOpen = !inventoryOpen;
+      const inv = document.getElementById('stat-inventory');
+      const toggle = document.querySelector('.inv-toggle');
+      inv.style.whiteSpace = inventoryOpen ? 'normal' : 'nowrap';
+      toggle.textContent = inventoryOpen ? '▴' : '▾';
+    }
+
+    let isProcessing = false;
+    let chapterCount = 1;
+
+    async function continueGame(customPrompt = null) {
+      if (isProcessing) return;
+      isProcessing = true;
+      appendStory('loading', 'AI 思考中...');
+      setSuggestionsLoading(true);
+
+      try {
+        const prompt = customPrompt || '請繼續描述當前場景，給出合理的劇情發展與行動建議。';
+        MemoryManager.add('user', prompt);
+        const raw = await callWithRetry(MemoryManager.getMessages(), window._apiKey);
+        const { story, delta, suggestions } = AIApi.parseResponse(raw);
+        MemoryManager.add('assistant', raw);
+        StateManager.applyDelta(delta);
+
+        // HP 危險警示
+        const hpRatio = StateManager.current.hp / StateManager.current.max_hp;
+        document.body.classList.toggle('danger', hpRatio <= 0.2);
+
+        removeLoading();
+        appendStory('ai', story);
+        updateSuggestions(suggestions);
+        MemoryManager.saveToDB(PLAYER_ID, SimulatorConfig.theme);
+        if (MemoryManager.shouldCompress()) {
+          chapterCount++;
+          MemoryManager.compress(PLAYER_ID, SimulatorConfig.theme, window._apiKey, chapterCount);
+        }
+      } catch (err) {
+        removeLoading();
+        appendStory('error', '錯誤：' + err.message);
+      }
+
+      setSuggestionsLoading(false);
+      isProcessing = false;
+    }
+
+    document.getElementById('player-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+    document.getElementById('send-btn').addEventListener('click', sendMessage);
+
+    async function sendMessage() {
+      const input = document.getElementById('player-input');
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = '';
+      if (inputMode === 'name') {
+        await handleNameInput(text);
+        return;
+      }
+      appendStory('player', text);
+      document.getElementById('send-btn').disabled = true;
+      await continueGame(text);
+      document.getElementById('send-btn').disabled = false;
+    }
+
+    function selectSuggest(btn) {
+      if (btn.textContent === '...' || btn.classList.contains('loading')) return;
+      document.getElementById('player-input').value = btn.textContent;
+      sendMessage();
+    }
+
+    function updateSuggestions(suggestions) {
+      const btns = document.querySelectorAll('.suggest-btn');
+      suggestions.forEach((text, i) => {
+        if (btns[i]) btns[i].textContent = text;
+      });
+    }
+
+    function setSuggestionsLoading(loading) {
+      document.querySelectorAll('.suggest-btn').forEach(btn => {
+        btn.classList.toggle('loading', loading);
+      });
+    }
+
+    function appendStory(type, text) {
+      const log = document.getElementById('story-log');
+      const div = document.createElement('div');
+      div.className = `story-entry ${type}`;
+      if (type === 'loading') div.dataset.loading = 'true';
+      div.textContent = text;
+      log.appendChild(div);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    function removeLoading() {
+      const el = document.querySelector('[data-loading="true"]');
+      if (el) el.remove();
+    }
+
+    async function confirmRestart() {
+      if (!confirm('確定要重新開始嗎？目前的存檔將會清除。')) return;
+      try {
+        await DB.savePlayer({
+          player_id: PLAYER_ID,
+          simulator_id: SimulatorConfig.theme,
+          name: '', gender: '', weapon_type: '',
+          hp: 100, max_hp: 100, gold: 0,
+          location: '起始之鎮', inventory_json: [],
+          extra_json: {}
+        });
+        await DB.saveMemory(PLAYER_ID, SimulatorConfig.theme, []);
+        await DB.clearSummary(PLAYER_ID, SimulatorConfig.theme);
+      } catch (err) {
+        console.warn('清除存檔失敗：', err.message);
+      }
+      document.body.classList.remove('danger');
+      MemoryManager.init(SimulatorConfig.systemPrompt);
+      document.getElementById('story-log').innerHTML = '';
+      startNewGame();
+    }
+
+    async function callWithRetry(messages, apiKey, maxRetry = 3) {
+      for (let i = 0; i < maxRetry; i++) {
+        try {
+          return await AIApi.call(messages, apiKey);
+        } catch (err) {
+          const waitMatch = err.message.match(/retry in ([\d.]+)s/);
+          if (waitMatch && i < maxRetry - 1) {
+            const waitSec = Math.ceil(parseFloat(waitMatch[1]));
+            await showCooldown(waitSec);
+          } else {
+            throw err;
+          }
+        }
+      }
+    }
+
+    function showCooldown(seconds) {
+      return new Promise(resolve => {
+        const log = document.getElementById('story-log');
+        const div = document.createElement('div');
+        div.className = 'story-entry cooldown';
+        log.appendChild(div);
+        log.scrollTop = log.scrollHeight;
+        let remaining = seconds;
+        div.textContent = `⏳ 連線限制，${remaining} 秒後自動重試...`;
+        const timer = setInterval(() => {
+          remaining--;
+          if (remaining <= 0) {
+            clearInterval(timer);
+            div.remove();
+            resolve();
+          } else {
+            div.textContent = `⏳ 連線限制，${remaining} 秒後自動重試...`;
+          }
+        }, 1000);
+      });
+    }
+  </script>
+
+</body>
+</html>
