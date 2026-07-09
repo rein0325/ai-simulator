@@ -338,6 +338,16 @@
     async function continueGame(customPrompt = null) {
       if (isProcessing) return;
       isProcessing = true;
+
+      // 如果記憶壓縮還在跑，先等它完成
+      if (MemoryManager.isCompressing) {
+        appendStory('system', '整理記憶中，請稍候...');
+        await MemoryManager.waitForCompress();
+        // 移除提示訊息
+        const msgs = document.querySelectorAll('.story-entry.system');
+        msgs[msgs.length - 1]?.remove();
+      }
+
       appendStory('loading', '劇情演算中...');
       setSuggestionsLoading(true);
 

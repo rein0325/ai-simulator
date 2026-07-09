@@ -81,17 +81,16 @@ const MemoryManager = {
   },
 
   // 壓縮舊對話成摘要，存進 DB
+  isCompressing: false,
+
   async compress(playerId, simulatorId, apiKey, chapter) {
     const nonSystem = this.getNonSystemMessages();
     if (nonSystem.length === 0) return;
 
-    // 只壓縮前半段，保留最新 5 輪
     const toCompress = nonSystem.slice(0, -10);
     if (toCompress.length === 0) return;
 
-    // 延遲 60 秒再壓縮，避免與遊戲對話搶額度
-    console.log('記憶壓縮排隊中，60 秒後執行...');
-    await new Promise(resolve => setTimeout(resolve, 60000));
+    this.isCompressing = true;
     console.log('觸發記憶壓縮...');
 
     try {
@@ -108,21 +107,31 @@ const MemoryManager = {
         : raw.trim();
 
       this.currentSummary = newSummary;
-
-      // 存進 DB
       await DB.saveSummary(playerId, simulatorId, chapter, newSummary, []);
 
-      // 刪除已壓縮的舊對話，只保留最新 10 筆
       const system = this.shortTerm.find(m => m.role === 'system');
       const recent = this.getNonSystemMessages().slice(-10);
       this.shortTerm = system ? [system, ...recent] : recent;
-
-      // 更新 DB 記憶
       await this.saveToDB(playerId, simulatorId);
 
       console.log('記憶壓縮完成');
     } catch (err) {
       console.warn('記憶壓縮失敗：', err.message);
     }
-  }
+
+    this.isCompressing = false;
+  },
+
+  waitForCompress() {
+    return new Promise(resolve => {
+      if (!this.isCompressing) { resolve(); return; }
+      console.log('等待記憶壓縮完成...');
+      const check = setInterval(() => {
+        if (!this.isCompressing) {
+          clearInterval(check);
+          resolve();
+        }
+      }, 500);
+    });
+  },
 };
