@@ -138,7 +138,7 @@
   <script src="config.js"></script>
 
   <script>
-    const GATE_PASSWORD = '你的密碼';  // ← 改這裡
+    const GATE_PASSWORD = '0325';  // ← 改這裡
     const PLAYER_ID = 'rein_sao_001';
 
     function unlock() {
@@ -338,7 +338,7 @@
     async function continueGame(customPrompt = null) {
       if (isProcessing) return;
       isProcessing = true;
-      appendStory('loading', 'AI 思考中...');
+      appendStory('loading', '劇情演算中...');
       setSuggestionsLoading(true);
 
       try {
