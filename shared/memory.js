@@ -89,6 +89,9 @@ const MemoryManager = {
     const toCompress = nonSystem.slice(0, -10);
     if (toCompress.length === 0) return;
 
+    // 延遲 60 秒再壓縮，避免與遊戲對話搶額度
+    console.log('記憶壓縮排隊中，60 秒後執行...');
+    await new Promise(resolve => setTimeout(resolve, 60000));
     console.log('觸發記憶壓縮...');
 
     try {
